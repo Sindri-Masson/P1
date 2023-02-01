@@ -4,19 +4,22 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"net"
+	"sync"
 	"strings"
+	"time"
 )
 
 func parse_ports(ports string) []int {
-	var ports_list []string = strings.Split(ports, ",");
+	ports_list := strings.Split(ports, ",");
 	var ports_list_int []int;
-	for i := 0; i < len(ports_list); i++ {
-		if strings.Contains(ports_list[i], "-") {
-			var start_end []string = strings.Split(ports_list[i], "-");
+	for _, portString := range ports_list {
+		if strings.Contains(portString, "-") {
+			var start_end []string = strings.Split(portString, "-");
 			var strStart string = start_end[0];
 			var start, start_err = strconv.Atoi(strStart);
 			var end, end_err = strconv.Atoi(start_end[1]);
-			ports_list = append(ports_list[:i], ports_list[i+1:]...);
+			//ports_list = append(ports_list[:i], ports_list[i+1:]...);
 			if start_err != nil || end_err != nil {
 				fmt.Println("Error parsing ports")
 				os.Exit(1);
@@ -24,13 +27,15 @@ func parse_ports(ports string) []int {
 			for j := start; j <= end; j++ {
 				ports_list_int = append(ports_list_int, j);
 			}
-		}
-		var port, err = strconv.Atoi(ports_list[i]);
-		if err != nil {
-			fmt.Println("Error parsing ports")
+		} else {
+			var port, err = strconv.Atoi(portString);
+			fmt.Println(port);
+			if err != nil {
+				fmt.Println("Error parsing ports")
 				os.Exit(1);
+			}
+			ports_list_int = append(ports_list_int, port);
 		}
-		ports_list_int = append(ports_list_int, port);
 	}
 	return ports_list_int
 }
@@ -47,6 +52,28 @@ func parse_ports(ports string) []int {
 	return ips_list
 } */
 
+
+func scan(host string, ports []int, semaphore chan struct{}) {
+	for _, port := range ports {
+		semaphore <- struct{}{}
+		fmt.Println("Scanning", host, ":", port, "...")
+		go func(host string, port int) {
+			defer func() { 
+				<-semaphore 
+			}()
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", host, port), 1*time.Second)
+		if err != nil {
+			fmt.Println(host, ":", port, "closed")
+			return
+		}
+		conn.Close()
+		fmt.Println(host, ":", port, "open")
+		}(host,port)
+	}
+}
+
+
+
 func main() {
 	// Get the IP address and port range from the command line
 	if len(os.Args) < 3 {
@@ -54,11 +81,25 @@ func main() {
 		os.Exit(1)
 	}
 	//print out the arguments
-	var ports string = os.Args[1];
-	var ports_list []int = parse_ports(ports);
-	var ips []string = os.Args[2:len(os.Args)];
+	var portsS string = os.Args[2];
+	var hostsS string = os.Args[3];
+	ports := parse_ports(portsS);
+	hosts := strings.Split(hostsS, " ");
+	//var ips []string = os.Args[2:len(os.Args)];
+	semaphore := make(chan struct{}, 20);
+	var wg sync.WaitGroup
+	wg.Add(len(hosts))
 
+	for _, host := range hosts {
+		go func(host string) {
+			defer wg.Done()
+			scan(host, ports, semaphore)
+		}(host)
+	}
+	wg.Wait()
+
+	fmt.Println(portsS)
 	fmt.Println(ports)
-	fmt.Println(ports_list)
-	fmt.Println(ips)
+	fmt.Println(hosts)
+	fmt.Println(hostsS)
 }
