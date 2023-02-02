@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func parse_ports(ports string) []int {
+func parsePorts(ports string) []int {
 	ports_list := strings.Split(ports, ",");
 	var ports_list_int []int;
 	for _, portString := range ports_list {
@@ -40,58 +40,38 @@ func parse_ports(ports string) []int {
 	return ports_list_int
 }
 
-func scan(host string, ports []int, semaphore chan struct{}, wg *sync.WaitGroup) {
-	defer wg.Done();
-	for _, port := range ports {
-		semaphore <- struct{}{}
-		go func(host string, port int) {
-			defer func() { 
-				<-semaphore 
-			}()
-		conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", host, port), 1*time.Second)
-		if err != nil {
-			fmt.Println(host, ":", port, "closed")
-			return
-		}
-		conn.Close()
-		fmt.Println(host, ":", port, "open")
-		}(host,port)
-		wg.Add(1)
+func scanner(host string, port int, semaphore chan struct{}, wg *sync.WaitGroup){
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", host, port), 1*time.Second)
+	if err != nil {
+		fmt.Println(host, ":", port, "closed")
+		return
 	}
+	conn.Close()
+	fmt.Println(host, ":", port, "open")
 }
 
 
-
 func main() {
-	// Get the IP address and port range from the command line
 	if len(os.Args) < 3 {
-		fmt.Printf("Usage: go run port_scanner.go <ports> <ip1> <ip2> ... <ipn>")
+		fmt.Println("Usage: go run port_scanner.g <flag> <host> <ports>")
 		os.Exit(1)
 	}
-	//print out the arguments
-	
-	var portsS string = os.Args[2];
-	var hostsS string = os.Args[3];
-	ports := parse_ports(portsS);
-	hosts := strings.Split(hostsS, " ");
-	//var ips []string = os.Args[2:len(os.Args)];
-	semaphore := make(chan struct{}, 20);
+	ports := parsePorts(os.Args[2])
+	hosts := strings.Split(os.Args[3], " ")
+	semaphore := make(chan struct{}, 100)
 	var wg sync.WaitGroup
-	wg.Add(len(hosts))
 	for _, host := range hosts {
-		go func(host string) {
-			defer wg.Done()
-			var wg sync.WaitGroup
-			wg.Add(len(ports))
-			scan(host, ports, semaphore, &wg)
-			wg.Wait()
-		}(host)
+		for _, port := range ports {
+			semaphore <- struct{}{}
+			wg.Add(1)
+			go func(host string, port int) {
+				defer func() { 
+					<-semaphore
+					wg.Done()
+				}()
+				scanner(host, port, semaphore, &wg)
+			}(host,port)
+		}
 	}
 	wg.Wait()
-	
-
-	fmt.Println(portsS)
-	fmt.Println(ports)
-	fmt.Println(hosts)
-	fmt.Println(hostsS)
 }
