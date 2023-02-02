@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"math"
+	"net"
 	"os"
 	"strconv"
-	"net"
-	"sync"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -40,6 +41,33 @@ func parsePorts(ports string) []int {
 	return ports_list_int
 }
 
+//parse the ip addresses and check for cidr notation
+func parse_ips(ips []string) []string {
+	var ips_list []string;
+	for _, ip := range ips {
+		if strings.Contains(ip, "/") {
+			var ip_cidr []string = strings.Split(ip, "/");
+			var ip_start = ip_cidr[0];
+			ip_chunks := strings.Split(ip_start, ".");
+			var ip_mask, err = strconv.Atoi(ip_cidr[1]);
+			if err != nil {
+				fmt.Println("Error parsing ip mask")
+				os.Exit(1);
+			}
+			num_hosts := math.Pow(2, float64(32 - ip_mask))
+
+			for i := 1; i < int(num_hosts) - 1; i++ {
+				var ip string = ip_chunks[0] + "." + ip_chunks[1] + "." + ip_chunks[2] + "." + strconv.Itoa(i);
+				ips_list = append(ips_list, ip);
+			}
+		} else {
+			ips_list = append(ips_list, ip);
+		}
+	}
+	fmt.Println(ips_list)
+	return ips_list;
+}
+
 func scanner(host string, port int, semaphore chan struct{}, wg *sync.WaitGroup){
 	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", host, port), 1*time.Second)
 	if err != nil {
@@ -47,7 +75,7 @@ func scanner(host string, port int, semaphore chan struct{}, wg *sync.WaitGroup)
 		return
 	}
 	conn.Close()
-	fmt.Println(host, ":", port, "open")
+	fmt.Println(host, ":", port, " open")
 }
 
 
@@ -57,7 +85,7 @@ func main() {
 		os.Exit(1)
 	}
 	ports := parsePorts(os.Args[2])
-	hosts := strings.Split(os.Args[3], " ")
+	hosts := parse_ips(os.Args[3:])
 	semaphore := make(chan struct{}, 100)
 	var wg sync.WaitGroup
 	for _, host := range hosts {
