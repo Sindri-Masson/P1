@@ -39,24 +39,11 @@ func parse_ports(ports string) []int {
 	}
 	return ports_list_int
 }
-/* func parse_ips(ips []string) []int {
-	var ips_list []int;
-	for i := 0; i < len(ips); i++ {
-		var port, err = strconv.Atoi(ips[i]);
-		if err != nil {
-			fmt.Println("Error parsing ips")
-			os.Exit(1);
-		}
-		ips_list = append(ips_list, port);
-	}
-	return ips_list
-} */
 
-
-func scan(host string, ports []int, semaphore chan struct{}) {
+func scan(host string, ports []int, semaphore chan struct{}, wg *sync.WaitGroup) {
+	defer wg.Done();
 	for _, port := range ports {
 		semaphore <- struct{}{}
-		fmt.Println("Scanning", host, ":", port, "...")
 		go func(host string, port int) {
 			defer func() { 
 				<-semaphore 
@@ -69,6 +56,7 @@ func scan(host string, ports []int, semaphore chan struct{}) {
 		conn.Close()
 		fmt.Println(host, ":", port, "open")
 		}(host,port)
+		wg.Add(1)
 	}
 }
 
@@ -81,6 +69,7 @@ func main() {
 		os.Exit(1)
 	}
 	//print out the arguments
+	
 	var portsS string = os.Args[2];
 	var hostsS string = os.Args[3];
 	ports := parse_ports(portsS);
@@ -89,14 +78,17 @@ func main() {
 	semaphore := make(chan struct{}, 20);
 	var wg sync.WaitGroup
 	wg.Add(len(hosts))
-
 	for _, host := range hosts {
 		go func(host string) {
 			defer wg.Done()
-			scan(host, ports, semaphore)
+			var wg sync.WaitGroup
+			wg.Add(len(ports))
+			scan(host, ports, semaphore, &wg)
+			wg.Wait()
 		}(host)
 	}
 	wg.Wait()
+	
 
 	fmt.Println(portsS)
 	fmt.Println(ports)
