@@ -71,7 +71,7 @@ func parse_ips(ips []string) []string {
 func scanner(host string, port int, semaphore chan struct{}, wg *sync.WaitGroup){
 	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", host, port), 1*time.Second)
 	if err != nil {
-		fmt.Println(host, ":", port, "closed")
+		fmt.Println(host, ":", port, "closed error: ", err)
 		return
 	}
 	conn.Close()
@@ -80,6 +80,7 @@ func scanner(host string, port int, semaphore chan struct{}, wg *sync.WaitGroup)
 
 
 func main() {
+	start := time.Now()
 	if len(os.Args) < 3 {
 		fmt.Println("Usage: go run port_scanner.g <flag> <host> <ports>")
 		os.Exit(1)
@@ -102,4 +103,6 @@ func main() {
 		}
 	}
 	wg.Wait()
+	elapsed := time.Since(start)
+	fmt.Println("Time taken: ", elapsed)
 }
