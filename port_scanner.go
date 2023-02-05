@@ -69,9 +69,9 @@ func parse_ips(ips []string) []string {
 }
 
 func scanner(host string, port int, semaphore chan struct{}, wg *sync.WaitGroup){
-	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", host, port), 6*time.Second)
+	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", host, port), 3*time.Second)
 	if err != nil {
-		fmt.Println(host, ":", port, "closed error: ", err)
+		fmt.Println(host, ":", port, "closed")
 		return
 	}
 	conn.Close()
@@ -89,18 +89,14 @@ func main() {
 	hosts := parse_ips(os.Args[3:])
 	semaphore := make(chan struct{}, 10000)
 	var wg sync.WaitGroup
-	var count int;
 	for _, host := range hosts {
 		for _, port := range ports {
 			semaphore <- struct{}{}
 			wg.Add(1)
-			count++;
-			fmt.Println("count: ", count)
 			go func(host string, port int) {
 				defer func() {
 					<-semaphore
 					wg.Done()
-					count--;
 				}()
 				scanner(host, port, semaphore, &wg)
 			}(host,port)
