@@ -11,15 +11,14 @@ import (
 	"time"
 )
 
-func parsePorts(ports string) []int {
-	//parses the ports string and returns a list of ports
+func parse_ports(ports string) []int {
+	//parses the ports string and returns a list of the ports as ints
 	ports_list := strings.Split(ports, ","); //split the ports string into a list of ports whenever there is a comma
 	var ports_list_int []int;
 	for _, portString := range ports_list { //for loop to iterate through the ports list
 		if strings.Contains(portString, "-") { //if the port is a range of ports
-			var start_end []string = strings.Split(portString, "-");	
-			var strStart string = start_end[0]; //start of the range
-			var start, start_err = strconv.Atoi(strStart);
+			var start_end []string = strings.Split(portString, "-");
+			var start, start_err = strconv.Atoi(start_end[0]); //start of the range
 			var end, end_err = strconv.Atoi(start_end[1]); //end of the range
 			//ports_list = append(ports_list[:i], ports_list[i+1:]...);
 			if start_err != nil || end_err != nil {
@@ -29,7 +28,7 @@ func parsePorts(ports string) []int {
 			for j := start; j <= end; j++ {
 				ports_list_int = append(ports_list_int, j); //add the ports to the list in int type
 			}
-		} else {
+		} else { //if the port is a single port just add it to the list
 			var port, err = strconv.Atoi(portString);
 			fmt.Println(port);
 			if err != nil { 
@@ -86,7 +85,7 @@ func main() {
 		fmt.Println("Usage: go run port_scanner.g <flag> <host> <ports>")
 		os.Exit(1)
 	}
-	ports := parsePorts(os.Args[2])
+	ports := parse_ports(os.Args[2])
 	hosts := parse_ips(os.Args[3:])
 	semaphore := make(chan struct{}, 10000) //create a semaphore with a buffer of 10000
 	var wg sync.WaitGroup

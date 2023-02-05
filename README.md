@@ -9,6 +9,8 @@ To run the program, run the following command:
 
     $ go run port_scanner.go -p <comma separated ports and ranges> <space separated hosts>
 
+The program consists of 4 functions, main, scanner, parse_ports and parse_ips. The main function is the entry point of the program, it parses the command line arguments and starts the goroutines that scan the ports. The function scanner scans a single port on a single host. The function parse_ports parses the ports and ranges of ports given as command line arguments and returns a integer slice of ports to scan. The function parse_ips parses the hosts and CIDR subnets given as command line arguments and returns a slice of hosts to scan.
+
 ## Discussion
 
 This program runs a maximum of 10000 goroutines at any time. It starts a new goroutine for each host and port combination. It only starts a new goroutine if there are less than 10000 goroutines running at the time and if there are still port/host combinations to scan(goroutine started in line 94). To make sure all goroutines have finished before the program exits, a waitgroup is used. Each goroutine increments the waitgroup wg by 1 when it is started and decrements it by 1 when it finishes (done with wg.Add(1) in line 93 and wg.Done() in line 97 respectively). The program waits for the waitgroup to reach 0 before exiting.
