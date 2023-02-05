@@ -9,7 +9,7 @@ To run the program, run the following command:
 
     $ go run port_scanner.go -p <comma separated ports and ranges> <space separated hosts>
 
-The program consists of 4 functions, main, scanner, parse_ports and parse_ips. The main function is the entry point of the program, it parses the command line arguments and starts the goroutines that scan the ports. The function scanner scans a single port on a single host. The function parse_ports parses the ports and ranges of ports given as command line arguments and returns a integer slice of ports to scan. The function parse_ips parses the hosts and CIDR subnets given as command line arguments and returns a slice of hosts to scan.
+The program consists of 4 functions, main, scanner, parse_ports and parse_ips. The main function is the entry point of the program, it parses the command line arguments and starts the goroutines that scan the ports. The function scanner scans a single port on a single host and then writes whether the port is open or not to the console. The function parse_ports parses the ports and ranges of ports given as command line arguments and returns a integer slice of ports to scan. The function parse_ips parses the hosts and CIDR subnets given as command line arguments and returns a slice of hosts to scan.
 
 ## Discussion
 
