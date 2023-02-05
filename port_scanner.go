@@ -41,7 +41,6 @@ func parsePorts(ports string) []int {
 	return ports_list_int
 }
 
-//parse the ip addresses and check for cidr notation
 func parse_ips(ips []string) []string {
 	var ips_list []string;
 	for _, ip := range ips {
@@ -78,7 +77,6 @@ func scanner(host string, port int, semaphore chan struct{}, wg *sync.WaitGroup)
 	fmt.Println(host, ":", port, " open")
 }
 
-
 func main() {
 	start := time.Now()
 	if len(os.Args) < 3 {
@@ -106,8 +104,3 @@ func main() {
 	elapsed := time.Since(start)
 	fmt.Println("Time taken: ", elapsed)
 }
-
-//unlimited goroutines 100.000 ports in 3m24s no timeout so 490 ports per second
-//unlimited goroutines 50.000 ports in 8m21s all timeout so 100 ports per second
-
-//Max 50 goroutines 50.000 ports in 3m36s no timeout so 231 ports per second
