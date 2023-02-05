@@ -89,20 +89,33 @@ func main() {
 	hosts := parse_ips(os.Args[3:])
 	semaphore := make(chan struct{}, 100)
 	var wg sync.WaitGroup
+	var count int;
+	var i int;
 	for _, host := range hosts {
-		for _, port := range ports {
-			semaphore <- struct{}{}
-			wg.Add(1)
-			go func(host string, port int) {
-				defer func() { 
-					<-semaphore
-					wg.Done()
-				}()
-				scanner(host, port, semaphore, &wg)
-			}(host,port)
+		for i < len(ports) {
+			if count < 50{
+				semaphore <- struct{}{}
+				wg.Add(1)
+				count++;
+				fmt.Println("count: ", count)
+				go func(host string, port int) {
+					defer func() { 
+						<-semaphore
+						wg.Done()
+						count--;
+					}()
+					scanner(host, port, semaphore, &wg)
+				}(host,ports[i])
+				i++
+			}
 		}
 	}
 	wg.Wait()
 	elapsed := time.Since(start)
 	fmt.Println("Time taken: ", elapsed)
 }
+
+//unlimited goroutines 100.000 ports in 3m24s no timeout so 490 ports per second
+//unlimited goroutines 50.000 ports in 8m21s all timeout so 100 ports per second
+
+//Max 500 goroutines 100.000 ports in 1m30s no timeout so 2000 ports per second
