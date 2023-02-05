@@ -72,11 +72,11 @@ func scanner(host string, port int, semaphore chan struct{}, wg *sync.WaitGroup)
 	//then displays whether the port is open or closed
 	conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", host, port), 3*time.Second)
 	if err != nil {
-		fmt.Println(host, ":", port, "closed")
+		fmt.Println(host + ":" + strconv.Itoa(port) + " closed")
 		return
 	}
 	conn.Close()
-	fmt.Println(host, ":", port, " open")
+	fmt.Println(host + ":" + strconv.Itoa(port) + " open")
 }
 
 func main() {
